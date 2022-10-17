@@ -1,5 +1,6 @@
 use std::net::TcpStream;
 use std::io::prelude::*;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use info_utils::error;
 use info_utils::prelude::*;
@@ -7,17 +8,39 @@ use info_utils::prelude::*;
 use crate::util::{
     comms::Net,
     connection::Connection,
+    message::Message,
 };
 
 pub fn create_sender_connection(connection: Connection, comms: Net) {
-    let mut stream = TcpStream::connect(format!("{}:{}", connection.domain.should("Should be validated"), connection.port.should("Should be validated"))).eval_or_else(|e| {
+    let mut stream = Arc::new(Mutex::new(TcpStream::connect(format!("{}:{}", connection.domain.should("Should be validated"), connection.port.should("Should be validated"))).eval_or_else(|e| {
         error!("{}", e);
-    });
+    })));
+
+    let l_stream = Arc::clone(&mut stream);
+    let s_stream = Arc::clone(&mut stream);
 
     let listen_thread = thread::Builder::new()
         .name("Listener Thread".to_string())
-        .spawn(|| {
-            terror!("test error");
+        .spawn(move || {
+            let mut l_stream = l_stream.lock().should("Mutex is poisoned");
+            loop {
+                let mut buffer = [0; 8192];
+                let bytes_read = l_stream.read(&mut buffer).eval_or_default();
+                if bytes_read == 0 {
+                    if l_stream.peek(&mut buffer).eval_or_default() == 0 {
+                        warn!("stream closed");
+                        break;
+                    }
+                }
+                let read_message = String::from_utf8_lossy(&buffer);
+                let read_message = read_message.trim_end_matches(char::from(0));
+
+                let message = Message {
+                    sender: "EXT".to_string(),
+                    content: read_message.to_string(),
+                };
+                comms.sender.send(message).should("Sender should not be blocked");
+            }
         }).eval();
 
 

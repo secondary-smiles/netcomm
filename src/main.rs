@@ -9,6 +9,7 @@ use util::{
     log::LogUtil,
     comms::{Net, Repl},
     message::Message,
+    connection::Connection
 };
 
 #[derive(Parser, Debug, Clone)]
@@ -43,17 +44,23 @@ fn main() {
 
     let net_comms = Net {
         sender: n_sender,
-        recvr: n_reciever
+        recvr: r_reciever
     };
 
     let repl_comms = Repl {
         sender: r_sender,
-        recvr: r_reciever,
+        recvr: n_reciever,
+    };
+
+    let connection = Connection {
+        domain: args.domain.clone(),
+        port: args.port.clone(),
     };
 
     if args.listen {
         args.log_v("Creating listener server..");
     } else {
         args.log_v("Creating sender connection..");
+        net::sender::create_sender_connection(connection, net_comms);
     }
 }

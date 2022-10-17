@@ -1,12 +1,15 @@
 use clap::Parser;
 use info_utils::prelude::*;
+use std::sync::mpsc;
 
-mod validate;
-mod log;
-mod message;
-mod comms;
+mod util;
+mod net;
 
-use crate::log::LogUtil;
+use util::{
+    log::LogUtil,
+    comms::{Net, Repl},
+    message::Message,
+};
 
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about, long_about = None)]
@@ -34,6 +37,19 @@ fn main() {
     args.validate().eval_or_else(|e| {
         error!("Invalid program arguments: {}", e);
     });
+
+    let (n_sender, n_reciever) = mpsc::channel::<Message>();
+    let (r_sender, r_reciever) = mpsc::channel::<Message>();
+
+    let net_comms = Net {
+        sender: n_sender,
+        recvr: n_reciever
+    };
+
+    let repl_comms = Repl {
+        sender: r_sender,
+        recvr: r_reciever,
+    };
 
     if args.listen {
         args.log_v("Creating listener server..");

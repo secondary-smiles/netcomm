@@ -1,15 +1,17 @@
 use clap::Parser;
 use info_utils::prelude::*;
 use std::sync::mpsc;
+use std::thread;
 
 mod util;
 mod net;
+mod repl;
 
 use util::{
     log::LogUtil,
     comms::{Net, Repl},
     message::Message,
-    connection::Connection
+    connection::Connection,
 };
 
 #[derive(Parser, Debug, Clone)]
@@ -44,7 +46,7 @@ fn main() {
 
     let net_comms = Net {
         sender: n_sender,
-        recvr: r_reciever
+        recvr: r_reciever,
     };
 
     let repl_comms = Repl {
@@ -57,10 +59,17 @@ fn main() {
         port: args.port.clone(),
     };
 
+    let repl_thread = thread::Builder::new()
+        .name("UI Thread".to_string())
+        .spawn(move || {
+            repl::print::create_repl(repl_comms);
+        }).eval();
+
     if args.listen {
         args.log_v("Creating listener server..");
     } else {
         args.log_v("Creating sender connection..");
         net::sender::create_sender_connection(connection, net_comms);
     }
+    repl_thread.join().eval();
 }

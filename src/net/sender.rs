@@ -12,9 +12,16 @@ use crate::util::{
 };
 
 pub fn create_sender_connection(connection: Connection, comms: Net) {
-    let mut stream = Arc::new(Mutex::new(TcpStream::connect(format!("{}:{}", connection.domain.should("Should be validated"), connection.port.should("Should be validated"))).eval_or_else(|e| {
-        error!("{}", e);
-    })));
+    let mut stream = Arc::new(
+        Mutex::new(
+            TcpStream::connect(
+                format!("{}:{}",
+                        connection.domain.should("Should be validated"),
+                        connection.port.should("Should be validated")
+                )
+            ).eval_or_else(|e| {
+                error!("{}", e);
+            })));
 
     let l_stream = Arc::clone(&mut stream);
     let s_stream = Arc::clone(&mut stream);
@@ -46,8 +53,25 @@ pub fn create_sender_connection(connection: Connection, comms: Net) {
 
     let send_thread = thread::Builder::new()
         .name("Sender Thread".to_string())
-        .spawn(|| {
-            terror!("test error");
+        .spawn(move || {
+            let mut s_stream = s_stream.lock().should("Mutex is poisoned");
+
+            loop {
+                let incoming_messages: Vec<Message> = comms.recvr.try_iter().collect();
+                let mut bytes_sent: usize = 0;
+
+                for message in incoming_messages {
+                    bytes_sent = s_stream.write(message.content.as_bytes()).eval_or_default();
+                }
+
+                if bytes_sent == 0 {
+                    let mut buffer = [0; 1];
+                    if s_stream.peek(&mut buffer).eval_or_default() == 0 {
+                        warn!("stream closed");
+                        break;
+                    }
+                }
+            }
         }).eval();
 
     listen_thread.join().should("Thread should panic");

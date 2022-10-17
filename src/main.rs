@@ -3,6 +3,7 @@ use info_utils::prelude::*;
 
 mod validate;
 mod log;
+mod util;
 
 use crate::log::LogUtil;
 

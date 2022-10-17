@@ -12,9 +12,9 @@ use crate::log::LogUtil;
 #[command(author, version, about, long_about = None)]
 /// Communicate with servers interactively
 pub struct Args {
-    port: u16,
-
     domain: Option<String>,
+
+    port: Option<u16>,
 
     /// Run in listen mode
     #[arg(short, long)]
@@ -34,4 +34,10 @@ fn main() {
     args.validate().eval_or_else(|e| {
         error!("Invalid program arguments: {}", e);
     });
+
+    if args.listen {
+        args.log_v("Creating listener server..");
+    } else {
+        args.log_v("Creating sender connection..");
+    }
 }

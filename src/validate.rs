@@ -7,24 +7,28 @@ use crate::LogUtil;
 impl Args {
     pub fn validate(&mut self) -> Result<(), String> {
         /* Checks:
+        - PORT
         - If not --listen; PORT && DOMAIN
         - If --listen; PORT !DOMAIN
         - If DOMAIN; DOMAIN is valid URL or IP
         - Cannot set -v && -q
         */
+        if self.port == None {
+            return Err("<PORT> must be specified".to_string());
+        }
+
         if !self.listen && self.domain == None {
             return Err("<DOMAIN> or --listen required".to_string());
         }
         if self.listen && self.domain != None {
-            return Err(format!(
-                    "{:?} is not a valid domain for listener server",
-            self.domain.clone().eval()
-            ));
+            return Err(
+                "<DOMAIN> cannot be specified with listener server".to_string(),
+            );
         }
 
         if self.quiet && self.verbose {
             return Err(
-                    "cannot set \"verbose\" and \"quiet\" options at the same time".to_string(),
+                "cannot set \"verbose\" and \"quiet\" options at the same time".to_string(),
             );
         }
         if self.domain != None {
@@ -33,9 +37,9 @@ impl Args {
                 Ok(d) => Some(d),
                 Err(e) => {
                     return Err(format!(
-                            "{:?} is not a valid domain or IP for reason: \"{}\"",
-                    self.domain.clone().eval(),
-                    e
+                        "{:?} is not a valid domain or IP for reason: \"{}\"",
+                        self.domain.clone().eval(),
+                        e
                     ));
                 }
             }
@@ -76,8 +80,8 @@ fn make_valid_domain(domain: String) -> Result<String, String> {
     // DOMAIN length
     if test_domain.is_empty() || test_domain.len() > 63 {
         return Err(format!(
-                "{:?} is not the correct length of a valid domain",
-        test_domain
+            "{:?} is not the correct length of a valid domain",
+            test_domain
         ));
     }
 
@@ -89,18 +93,18 @@ fn make_valid_domain(domain: String) -> Result<String, String> {
     // Split '.' length >= 2
     if test_domain.split('.').count() <= 1 {
         return Err(format!(
-                "{:?} has an invalid number of segments when split by \".\"",
-        test_domain
+            "{:?} has an invalid number of segments when split by \".\"",
+            test_domain
         ));
     }
 
     // Last TLD length >= 2
     if test_domain.split('.').last().eval().len() < 2
-       || test_domain.split('.').last().eval().len() > 6
+        || test_domain.split('.').last().eval().len() > 6
     {
         return Err(format!(
-                "Top level domain {:?} is not the correct length for a valid TLD",
-        test_domain.split('.').last().eval()
+            "Top level domain {:?} is not the correct length for a valid TLD",
+            test_domain.split('.').last().eval()
         ));
     }
 
@@ -131,62 +135,62 @@ mod tests {
         // Invalid characters
         let test_url: String = "example.'com".to_string(); // ' is an invalid char for a url
         assert_eq!(
-                make_valid_domain(test_url).eval_or("invalid url".to_string()),
-        "invalid url"
+            make_valid_domain(test_url).eval_or("invalid url".to_string()),
+            "invalid url"
         );
 
         // Too long
         let test_url: String =
-        "this-example-domain-is-way-way-way-too-long-to-be-a-valid-url-in-real-life.com"
-        .to_string();
+            "this-example-domain-is-way-way-way-too-long-to-be-a-valid-url-in-real-life.com"
+                .to_string();
         assert_eq!(
-                make_valid_domain(test_url).eval_or("invalid url".to_string()),
-        "invalid url"
+            make_valid_domain(test_url).eval_or("invalid url".to_string()),
+            "invalid url"
         );
 
         // post || prefixed url
         let test_url: String = "example.this-".to_string();
         assert_eq!(
-                make_valid_domain(test_url).eval_or("invalid url".to_string()),
-        "invalid url"
+            make_valid_domain(test_url).eval_or("invalid url".to_string()),
+            "invalid url"
         );
 
         // Invalid TLD length
         let test_url: String = "example.thisistoolong".to_string();
         assert_eq!(
-                make_valid_domain(test_url).eval_or("invalid url".to_string()),
-        "invalid url"
+            make_valid_domain(test_url).eval_or("invalid url".to_string()),
+            "invalid url"
         );
 
         // Invalid number of segments
         let test_url: String = "onlyonesegment".to_string();
         assert_eq!(
-                make_valid_domain(test_url).eval_or("invalid url".to_string()),
-        "invalid url"
+            make_valid_domain(test_url).eval_or("invalid url".to_string()),
+            "invalid url"
         );
     }
 
-#[test]
-fn test_valid_domain_ip() {
+    #[test]
+    fn test_valid_domain_ip() {
         // Valid IPs
-    let ipv4: String = "127.0.0.1".to_string();
+        let ipv4: String = "127.0.0.1".to_string();
         let ipv6: String = "2001:db8:3333:4444:5555:6666:7777:8888".to_string();
         assert_eq!(make_valid_domain(ipv4).eval(), "127.0.0.1");
         assert_eq!(
-                make_valid_domain(ipv6).eval(),
-        "2001:db8:3333:4444:5555:6666:7777:8888"
+            make_valid_domain(ipv6).eval(),
+            "2001:db8:3333:4444:5555:6666:7777:8888"
         );
 
         // Invalid IPs
-    let ipv4: String = "127.0.0.1.0".to_string();
+        let ipv4: String = "127.0.0.1.0".to_string();
         let ipv6: String = "2001:db8:3333:4444:5555:6666:7777:8888:0".to_string();
         assert_eq!(
-                make_valid_domain(ipv4).eval_or("invalid ip".to_string()),
-        "invalid ip"
+            make_valid_domain(ipv4).eval_or("invalid ip".to_string()),
+            "invalid ip"
         );
         assert_eq!(
-                make_valid_domain(ipv6).eval_or("invalid ip".to_string()),
-        "invalid ip"
+            make_valid_domain(ipv6).eval_or("invalid ip".to_string()),
+            "invalid ip"
         );
     }
 }

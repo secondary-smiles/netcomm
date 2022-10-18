@@ -25,12 +25,11 @@ pub fn create_repl(comms: Repl) {
             loop {
                 let msg = Message {
                     sender: "EXT".to_string(),
-                    content: "test message".to_string(),
+                    content: "test message\r\n\r\n".to_string(),
                 };
 
                 comms.sender.send(msg).eval();
-                println!("test");
-                // thread::sleep(Duration::from_millis(500));
+                thread::sleep(Duration::from_millis(1000));
             }
         }).eval();
     // listen_thread.join().eval();

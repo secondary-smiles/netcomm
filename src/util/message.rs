@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct Message {
     pub sender: String, // User type?
     pub content: String,

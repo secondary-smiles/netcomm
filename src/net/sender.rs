@@ -1,6 +1,6 @@
 use std::net::TcpStream;
 use std::io::prelude::*;
-use std::sync::{Arc, Mutex};
+use std::sync::mpsc;
 use std::thread;
 use info_utils::error;
 use info_utils::prelude::*;
@@ -12,30 +12,30 @@ use crate::util::{
 };
 
 pub fn create_sender_connection(connection: Connection, comms: Net) {
-    let mut stream = Arc::new(
-        Mutex::new(
-            TcpStream::connect(
-                format!("{}:{}",
-                        connection.domain.should("Should be validated"),
-                        connection.port.should("Should be validated")
-                )
-            ).eval_or_else(|e| {
-                error!("{}", e);
-            })));
+    let stream = TcpStream::connect(
+        format!("{}:{}",
+                connection.domain.should("Should be validated"),
+                connection.port.should("Should be validated")
+        )).eval_or_else(|e| {
+        error!("{}", e);
+    });
 
-    let l_stream = Arc::clone(&mut stream);
-    let s_stream = Arc::clone(&mut stream);
+    let mut l_stream = stream;
+    let mut s_stream = l_stream.try_clone().should("System error");
+
+    let (sig, recvr) = mpsc::channel();
 
     let listen_thread = thread::Builder::new()
-        .name("Listener Thread".to_string())
+        .name("Net Listener".to_string())
         .spawn(move || {
-            let mut l_stream = l_stream.lock().should("Mutex is poisoned");
             loop {
                 let mut buffer = [0; 8192];
                 let bytes_read = l_stream.read(&mut buffer).eval_or_default();
+                l_stream.flush().should("Stream should flush successfully");
                 if bytes_read == 0 {
                     if l_stream.peek(&mut buffer).eval_or_default() == 0 {
                         warn!("stream closed");
+                        sig.send(true).should("Channel error");
                         break;
                     }
                 }
@@ -52,25 +52,17 @@ pub fn create_sender_connection(connection: Connection, comms: Net) {
 
 
     let send_thread = thread::Builder::new()
-        .name("Sender Thread".to_string())
+        .name("Net Sender".to_string())
         .spawn(move || {
-            let mut s_stream = s_stream.lock().should("Mutex is poisoned");
-
             loop {
                 let incoming_messages: Vec<Message> = comms.recvr.try_iter().collect();
-                let mut bytes_sent: usize = 0;
-
                 for message in incoming_messages {
-                    bytes_sent = s_stream.write(message.content.as_bytes()).eval_or_default();
+                    s_stream.write(message.content.as_bytes()).eval_or_default();
                     s_stream.flush().should("Stream should flush successfully");
                 }
-
-                if bytes_sent == 0 {
-                    let mut buffer = [0; 1];
-                    if s_stream.peek(&mut buffer).eval_or_default() == 0 {
-                        warn!("stream closed");
-                        break;
-                    }
+                let status = recvr.try_recv().eval_or_default();
+                if status {
+                    break;
                 }
             }
         }).eval();

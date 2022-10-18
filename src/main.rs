@@ -44,18 +44,21 @@ fn main() {
 
     let (n_sender, n_reciever) = mpsc::channel::<Message>();
     let (r_sender, r_reciever) = mpsc::channel::<Message>();
-    let (e_sender, e_reciever) = mpsc::channel::<bool>();
+    let (ne_sender, ne_reciever) = mpsc::channel::<bool>();
+    let (re_sender, re_reciever) = mpsc::channel::<bool>();
 
     let net_comms = Net {
         sender: n_sender,
         recvr: r_reciever,
-        event: e_sender,
+        event_o: re_sender,
+        event_i: ne_reciever,
     };
 
     let repl_comms = Repl {
         sender: r_sender,
         recvr: n_reciever,
-        event: e_reciever,
+        event_o: ne_sender,
+        event_i: re_reciever,
     };
 
     let connection = Connection {
@@ -81,5 +84,5 @@ fn main() {
             }).eval();
     }
     repl::print::create_repl(repl_comms);
-    net_thread.join().eval();
+    drop(net_thread);
 }

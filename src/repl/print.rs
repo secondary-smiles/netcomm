@@ -14,7 +14,7 @@ use crate::util::{
     message::Message,
 };
 
-pub fn create_repl(comms: Repl) {
+pub fn create_repl(comms: Repl) -> () {
     let handle_thread = thread::Builder::new()
         .name("UI Listener".to_string())
         .spawn(move || {
@@ -25,16 +25,21 @@ pub fn create_repl(comms: Repl) {
 
             write!(stdout, "> ").eval();
             loop {
+                let status = comms.event_i.try_recv().eval_or_default();
+                if status {
+                    shutdown(comms);
+                    break;
+                }
+
                 let input = stdin.next();
                 if let Some(Ok(key)) = input {
                     match key {
                         Key::Char(c) => {current_line.push(c)}
                         Key::Char('\n') => {}
-                        Key::Ctrl('c') => {shutdown(); break;},
+                        Key::Ctrl('c') => {shutdown(comms); break;},
                         _ => {}
                     }
                 }
-
 
                 let incoming_messages: Vec<Message> = comms.recvr.try_iter().collect();
 
@@ -48,18 +53,15 @@ pub fn create_repl(comms: Repl) {
                 };
 
 
-                let status = comms.event.try_recv().eval_or_default();
-                if status {
-                    shutdown();
-                    break;
-                }
 
                 comms.sender.send(msg).eval();
 
-                fn shutdown() {
+                fn shutdown(comms: Repl) {
+                    comms.event_o.send(true).eval();
                     println!("Restoring terminal, please hold..\r");
                 }
             }
         }).eval();
     handle_thread.join().eval();
+    return;
 }

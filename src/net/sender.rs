@@ -2,6 +2,7 @@ use std::net::TcpStream;
 use std::io::prelude::*;
 use std::sync::mpsc;
 use std::thread;
+use std::time::Duration;
 use info_utils::error;
 use info_utils::prelude::*;
 
@@ -17,7 +18,7 @@ pub fn create_sender_connection(connection: Connection, comms: Net) -> () {
                 connection.domain.should("Should be validated"),
                 connection.port.should("Should be validated")
         )).eval_or_else(|e| {
-        comms.event.send(true).should("Channel error");
+        comms.event_o.send(true).should("Channel error");
         terror!("{e}");
     });
 
@@ -30,14 +31,21 @@ pub fn create_sender_connection(connection: Connection, comms: Net) -> () {
         .name("Net Listener".to_string())
         .spawn(move || {
             loop {
+                let status = comms.event_i.try_recv().eval_or_default();
+                if status {
+                    comms.event_o.send(true).should("Channel error");
+                    break;
+                }
+
                 let mut buffer = [0; 8192];
                 let bytes_read = l_stream.read(&mut buffer).eval_or_default();
+                println!("{bytes_read}");
                 l_stream.flush().should("Stream should flush successfully");
                 if bytes_read == 0 {
                     if l_stream.peek(&mut buffer).eval_or_default() == 0 {
                         warn!("stream closed");
                         sig.send(true).should("Channel error");
-                        comms.event.send(true).should("Channel error");
+                        comms.event_o.send(true).should("Channel error");
                         break;
                     }
                 }
@@ -49,6 +57,7 @@ pub fn create_sender_connection(connection: Connection, comms: Net) -> () {
                     content: read_message.to_string(),
                 };
                 comms.sender.send(message).should("Sender should not be blocked");
+
             }
         }).eval();
 
@@ -63,13 +72,11 @@ pub fn create_sender_connection(connection: Connection, comms: Net) -> () {
                     s_stream.flush().should("Stream should flush successfully");
                 }
                 let status = recvr.try_recv().eval_or_default();
-                if status {
-                    break;
-                }
+                if status { break; }
             }
         }).eval();
 
-    listen_thread.join().should("Thread should panic");
-    send_thread.join().should("Thread should panic");
+    listen_thread.join().should("Thread shouldn't panic");
+    send_thread.join().should("Thread shouldn't panic");
     return;
 }

@@ -11,13 +11,14 @@ use crate::util::{
     message::Message,
 };
 
-pub fn create_sender_connection(connection: Connection, comms: Net) {
+pub fn create_sender_connection(connection: Connection, comms: Net) -> () {
     let stream = TcpStream::connect(
         format!("{}:{}",
                 connection.domain.should("Should be validated"),
                 connection.port.should("Should be validated")
         )).eval_or_else(|e| {
-        error!("{}", e);
+        comms.event.send(true).should("Channel error");
+        terror!("{e}");
     });
 
     let mut l_stream = stream;
@@ -36,6 +37,7 @@ pub fn create_sender_connection(connection: Connection, comms: Net) {
                     if l_stream.peek(&mut buffer).eval_or_default() == 0 {
                         warn!("stream closed");
                         sig.send(true).should("Channel error");
+                        comms.event.send(true).should("Channel error");
                         break;
                     }
                 }
@@ -69,4 +71,5 @@ pub fn create_sender_connection(connection: Connection, comms: Net) {
 
     listen_thread.join().should("Thread should panic");
     send_thread.join().should("Thread should panic");
+    return;
 }

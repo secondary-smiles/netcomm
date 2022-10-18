@@ -2,6 +2,7 @@ use clap::Parser;
 use info_utils::prelude::*;
 use std::sync::mpsc;
 use std::thread;
+use std::thread::JoinHandle;
 
 mod util;
 mod net;
@@ -43,15 +44,18 @@ fn main() {
 
     let (n_sender, n_reciever) = mpsc::channel::<Message>();
     let (r_sender, r_reciever) = mpsc::channel::<Message>();
+    let (e_sender, e_reciever) = mpsc::channel::<bool>();
 
     let net_comms = Net {
         sender: n_sender,
         recvr: r_reciever,
+        event: e_sender,
     };
 
     let repl_comms = Repl {
         sender: r_sender,
         recvr: n_reciever,
+        event: e_reciever,
     };
 
     let connection = Connection {
@@ -59,17 +63,23 @@ fn main() {
         port: args.port.clone(),
     };
 
-    let repl_thread = thread::Builder::new()
-        .name("UI Thread".to_string())
-        .spawn(move || {
-            repl::print::create_repl(repl_comms);
-        }).eval();
 
+    let net_thread: JoinHandle<()>;
     if args.listen {
         args.log_v("Creating listener server..");
+        net_thread = thread::Builder::new()
+            .name("Net".to_string())
+            .spawn(move || {
+                net::sender::create_sender_connection(connection, net_comms);
+            }).eval();
     } else {
         args.log_v("Creating sender connection..");
-        net::sender::create_sender_connection(connection, net_comms);
+        net_thread = thread::Builder::new()
+            .name("Net".to_string())
+            .spawn(move || {
+                net::sender::create_sender_connection(connection, net_comms);
+            }).eval();
     }
-    repl_thread.join().eval();
+    repl::print::create_repl(repl_comms);
+    net_thread.join().eval();
 }

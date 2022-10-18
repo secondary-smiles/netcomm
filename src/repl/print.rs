@@ -35,7 +35,8 @@ pub fn create_repl(comms: Repl) -> () {
                 if let Some(Ok(key)) = input {
                     match key {
                         Key::Char(c) => {current_line.push(c)}
-                        Key::Char('\n') => {}
+                        Key::Char('\n') => {
+                        }
                         Key::Ctrl('c') => {shutdown(comms); break;},
                         _ => {}
                     }

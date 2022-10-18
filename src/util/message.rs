@@ -9,3 +9,12 @@ impl std::fmt::Display for Message {
         write!(f, "{}: {}", self.sender, self.content)
     }
 }
+
+impl Message {
+    pub fn new(sender: String, content: String) -> Self {
+        Self {
+            sender,
+            content,
+        }
+    }
+}

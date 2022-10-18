@@ -62,6 +62,7 @@ pub fn create_sender_connection(connection: Connection, comms: Net) {
 
                 for message in incoming_messages {
                     bytes_sent = s_stream.write(message.content.as_bytes()).eval_or_default();
+                    s_stream.flush().should("Stream should flush successfully");
                 }
 
                 if bytes_sent == 0 {

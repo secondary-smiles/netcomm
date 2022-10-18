@@ -22,14 +22,17 @@ pub fn create_repl(comms: Repl) {
     let send_thread = thread::Builder::new()
         .name("UI Sender".to_string())
         .spawn(move || {
-            let msg = Message {
-                sender: "EXT".to_string(),
-                content: "test message".to_string(),
-            };
+            loop {
+                let msg = Message {
+                    sender: "EXT".to_string(),
+                    content: "test message".to_string(),
+                };
 
-            comms.sender.send(msg).eval();
-            // thread::sleep(Duration::from_millis(500));
+                comms.sender.send(msg).eval();
+                println!("test");
+                // thread::sleep(Duration::from_millis(500));
+            }
         }).eval();
-    listen_thread.join().eval();
-    send_thread.join().eval();
+    // listen_thread.join().eval();
+    // send_thread.join().eval();
 }

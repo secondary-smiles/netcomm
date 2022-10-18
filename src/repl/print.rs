@@ -34,10 +34,23 @@ pub fn create_repl(comms: Repl) -> () {
                 let input = stdin.next();
                 if let Some(Ok(key)) = input {
                     match key {
-                        Key::Char(c) => {current_line.push(c)}
                         Key::Char('\n') => {
+                            current_line += "\r\n";
+                            comms.sender.send(Message::new("YOU".to_string(), current_line)).eval();
+                            current_line = String::new();
+                            write!(stdout, "{}\r> ", termion::clear::CurrentLine).eval();
+                            stdout.flush().eval();
                         }
-                        Key::Ctrl('c') => {shutdown(comms); break;},
+                        Key::Char(c) => {
+                            write!(stdout, "{}", c as char).eval();
+                            stdout.flush().eval();
+
+                            current_line.push(c as char);
+                        }
+                        Key::Ctrl('c') => {
+                            shutdown(comms);
+                            break;
+                        }
                         _ => {}
                     }
                 }
@@ -47,15 +60,6 @@ pub fn create_repl(comms: Repl) -> () {
                 for message in incoming_messages {
                     println!("{}", message)
                 }
-
-                let msg = Message {
-                    sender: "EXT".to_string(),
-                    content: "test message\r\n".to_string(),
-                };
-
-
-
-                comms.sender.send(msg).eval();
 
                 fn shutdown(comms: Repl) {
                     comms.event_o.send(true).eval();

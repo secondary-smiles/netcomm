@@ -39,7 +39,6 @@ pub fn create_sender_connection(connection: Connection, comms: Net) -> () {
 
                 let mut buffer = [0; 8192];
                 let bytes_read = l_stream.read(&mut buffer).eval_or_default();
-                println!("{bytes_read}");
                 l_stream.flush().should("Stream should flush successfully");
                 if bytes_read == 0 {
                     if l_stream.peek(&mut buffer).eval_or_default() == 0 {

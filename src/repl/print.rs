@@ -56,9 +56,11 @@ pub fn create_repl(comms: Repl) -> () {
                 }
 
                 let incoming_messages: Vec<Message> = comms.recvr.try_iter().collect();
-
-                for message in incoming_messages {
-                    println!("{}", message)
+                if !incoming_messages.is_empty() {
+                    write!(stdout, "{}\r", termion::clear::CurrentLine).eval();
+                    for message in incoming_messages {
+                        write!(stdout, "{}\r\n", message).eval();
+                    }
                 }
 
                 fn shutdown(comms: Repl) {

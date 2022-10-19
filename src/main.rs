@@ -60,8 +60,8 @@ fn main() {
     if args.listen {
         thread::Builder::new()
             .name("Net".to_string())
-            .spawn(move || {
-                net::sender::create_sender_connection(connection, net_comms);
+            .spawn(move|| {
+                net_comms.event_o.send(true).eval();
             }).eval();
     } else {
         thread::Builder::new()

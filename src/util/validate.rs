@@ -11,8 +11,11 @@ impl Args {
         - If DOMAIN; DOMAIN is valid URL or IP
         - Cannot set -v && -q
         */
-        if self.port == None {
+        if self.port == None && self.domain ==  None {
             return Err("<PORT> must be specified".to_string());
+        } else if self.port == None && self.domain.clone().eval_or("foo".to_string()).parse::<u16>().is_ok() {
+            self.port = Some(self.domain.clone().eval().parse::<u16>().should("<DOMAIN> should be stable"));
+            self.domain = None;
         }
 
         if !self.listen && self.domain == None {

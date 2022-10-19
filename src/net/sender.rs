@@ -40,7 +40,6 @@ pub fn create_sender_connection(connection: Connection, comms: Net) -> () {
                 l_stream.flush().should("Stream should flush successfully");
                 if bytes_read == 0 {
                     if l_stream.peek(&mut buffer).eval_or_default() == 0 {
-                        warn!("stream closed");
                         comms.event_o.send(true).should("Channel error");
                         break;
                     }

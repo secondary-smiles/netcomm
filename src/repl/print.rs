@@ -10,7 +10,6 @@ use crate::util::{
 };
 
 pub fn create_repl(comms: Repl) -> () {
-    let mut comms: Repl = comms;
     let handle_thread = thread::Builder::new()
         .name("UI Listener".to_string())
         .spawn(move || {
@@ -19,7 +18,6 @@ pub fn create_repl(comms: Repl) -> () {
 
             let mut current_line = String::new();
 
-            write!(stdout, "> ").eval();
             loop {
                 let status = comms.event_i.try_recv().eval_or_default();
                 if status {
@@ -57,10 +55,6 @@ pub fn create_repl(comms: Repl) -> () {
 
                             current_line = audited_line.to_string();
                         }
-                        Key::Left => {}
-                        Key::Right => {}
-                        Key::Up => {}
-                        Key::Down => {}
                         Key::Ctrl('c') => {
                             shutdown(comms);
                             break;
@@ -79,7 +73,7 @@ pub fn create_repl(comms: Repl) -> () {
 
                 fn shutdown(comms: Repl) {
                     comms.event_o.send(true).eval_or_else(|e| {
-                        warn!("Stream send error: {e}");
+                        warn!("Network closed: {e}");
                     });
                     println!("Restoring terminal, please hold..\r");
                 }

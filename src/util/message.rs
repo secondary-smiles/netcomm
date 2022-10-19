@@ -7,7 +7,7 @@ pub struct Message {
 impl std::fmt::Display for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let message = self.content.replace('\n', "\r\n");
-        write!(f, "{}: {}", self.sender, message)
+        write!(f, "\x1b[1m{}:\x1b[0m {}", self.sender, message)
     }
 }
 

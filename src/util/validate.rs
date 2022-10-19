@@ -2,8 +2,6 @@ use crate::Args;
 use info_utils::prelude::*;
 use std::net::IpAddr;
 
-use crate::LogUtil;
-
 impl Args {
     pub fn validate(&mut self) -> Result<(), String> {
         /* Checks:
@@ -26,13 +24,7 @@ impl Args {
             );
         }
 
-        if self.quiet && self.verbose {
-            return Err(
-                "cannot set \"verbose\" and \"quiet\" options at the same time".to_string(),
-            );
-        }
         if self.domain != None {
-            self.log_v("Validating DOMAIN as url/ip..");
             self.domain = match make_valid_domain(self.domain.clone().eval()) {
                 Ok(d) => Some(d),
                 Err(e) => {

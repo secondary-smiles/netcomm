@@ -8,7 +8,6 @@ mod net;
 mod repl;
 
 use util::{
-    log::LogUtil,
     comms::{Net, Repl},
     message::Message,
     connection::Connection,
@@ -25,14 +24,6 @@ pub struct Args {
     /// Run in listen mode
     #[arg(short, long)]
     listen: bool,
-
-    /// Silence output logs
-    #[arg(short, long)]
-    quiet: bool,
-
-    /// Print extra logs
-    #[arg(short, long)]
-    verbose: bool,
 }
 
 fn main() {

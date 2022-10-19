@@ -1,9 +1,6 @@
 use std::net::TcpStream;
 use std::io::prelude::*;
-use std::sync::mpsc;
 use std::thread;
-use std::time::Duration;
-use info_utils::error;
 use info_utils::prelude::*;
 
 use crate::util::{
@@ -12,7 +9,7 @@ use crate::util::{
     message::Message,
 };
 
-pub fn create_sender_connection(connection: Connection, comms: Net) -> () {
+pub fn create_sender_connection(connection: Connection, comms: Net) {
     let stream = TcpStream::connect(
         format!("{}:{}",
                 connection.domain.should("Should be validated"),
@@ -38,11 +35,9 @@ pub fn create_sender_connection(connection: Connection, comms: Net) -> () {
                 let mut buffer = [0; 8192];
                 let bytes_read = l_stream.read(&mut buffer).eval_or_default();
                 l_stream.flush().should("Stream should flush successfully");
-                if bytes_read == 0 {
-                    if l_stream.peek(&mut buffer).eval_or_default() == 0 {
-                        comms.event_o.send(true).should("Channel error");
-                        break;
-                    }
+                if bytes_read == 0 && l_stream.peek(&mut buffer).eval_or_default() == 0 {
+                    comms.event_o.send(true).should("Channel error");
+                    break;
                 }
                 let read_message = String::from_utf8_lossy(&buffer);
                 let read_message = read_message.trim_end_matches(char::from(0));
@@ -52,12 +47,11 @@ pub fn create_sender_connection(connection: Connection, comms: Net) -> () {
                     content: read_message.to_string(),
                 };
                 comms.sender.send(message).should("Sender should not be blocked");
-
             }
         }).eval();
 
 
-    let send_thread = thread::Builder::new()
+    thread::Builder::new()
         .name("Net Sender".to_string())
         .spawn(move || {
             loop {
@@ -70,5 +64,4 @@ pub fn create_sender_connection(connection: Connection, comms: Net) -> () {
         }).eval();
 
     listen_thread.join().should("Thread shouldn't panic");
-    return;
 }

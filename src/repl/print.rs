@@ -1,7 +1,7 @@
 use std::thread;
 use info_utils::prelude::*;
-use termion::{screen, raw::{IntoRawMode}, input::TermRead, event::Key, cursor, clear};
-use std::io::{Write, stdout, stdin};
+use termion::{raw::{IntoRawMode}, input::TermRead, event::Key, clear};
+use std::io::{Write, stdout};
 
 
 use crate::util::{
@@ -9,7 +9,7 @@ use crate::util::{
     message::Message,
 };
 
-pub fn create_repl(comms: Repl) -> () {
+pub fn create_repl(comms: Repl) {
     let handle_thread = thread::Builder::new()
         .name("UI Listener".to_string())
         .spawn(move || {
@@ -66,7 +66,8 @@ pub fn create_repl(comms: Repl) -> () {
                 let incoming_messages: Vec<Message> = comms.recvr.try_iter().collect();
                 if !incoming_messages.is_empty() {
                     write!(stdout, "{}\r", clear::CurrentLine).eval();
-                    for message in incoming_messages {
+                    for mut message in incoming_messages {
+                        message.content = message.content.trim().to_string();
                         write!(stdout, "{}\r\n", message).eval();
                     }
                 }
@@ -75,10 +76,9 @@ pub fn create_repl(comms: Repl) -> () {
                     comms.event_o.send(true).eval_or_else(|e| {
                         warn!("Network closed: {e}");
                     });
-                    println!("Restoring terminal, please hold..\r");
+                    eprint!("Restoring terminal, please hold..\r\n");
                 }
             }
         }).eval();
     handle_thread.join().eval();
-    return;
 }

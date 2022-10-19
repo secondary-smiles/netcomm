@@ -12,10 +12,10 @@ impl std::fmt::Display for Message {
 }
 
 impl Message {
-    pub fn new(sender: String, content: String) -> Self {
+    pub fn new(sender: &String, content: &String) -> Self {
         Self {
-            sender,
-            content,
+            sender: sender.to_string(),
+            content: content.to_string(),
         }
     }
 }

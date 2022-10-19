@@ -32,10 +32,11 @@ pub fn create_repl(comms: Repl) -> () {
                     match key {
                         Key::Char('\n') => {
                             current_line += "\r\n";
-                            comms.sender.send(Message::new("YOU".to_string(), current_line)).eval();
-                            current_line = String::new();
-                            write!(stdout, "{}\r> ", termion::clear::CurrentLine).eval();
+                            comms.sender.send(Message::new(&"YOU".to_string(), &current_line)).eval();
+                            write!(stdout, "{}\r{}", clear::CurrentLine, Message::new(&"YOU".to_string(), &current_line)).eval();
+                            write!(stdout, "{}\r> ", clear::CurrentLine).eval();
                             stdout.flush().eval();
+                            current_line = String::new();
                         }
                         Key::Char(c) => {
                             write!(stdout, "{}", c as char).eval();
@@ -54,8 +55,13 @@ pub fn create_repl(comms: Repl) -> () {
 
                             current_line = audited_line.to_string();
                         }
+                        Key::Left => {}
+                        Key::Right => {}
+                        Key::Up => {}
+                        Key::Down => {}
                         Key::Ctrl('c') => {
-                            comms = shutdown(comms);
+                            shutdown(comms);
+                            break;
                         }
                         _ => {}
                     }
@@ -63,16 +69,15 @@ pub fn create_repl(comms: Repl) -> () {
 
                 let incoming_messages: Vec<Message> = comms.recvr.try_iter().collect();
                 if !incoming_messages.is_empty() {
-                    write!(stdout, "{}\r", termion::clear::CurrentLine).eval();
+                    write!(stdout, "{}\r", clear::CurrentLine).eval();
                     for message in incoming_messages {
                         write!(stdout, "{}\r\n", message).eval();
                     }
                 }
 
-                fn shutdown(comms: Repl) -> Repl {
+                fn shutdown(comms: Repl) {
                     comms.event_o.send(true).eval();
                     println!("Restoring terminal, please hold..\r");
-                    comms
                 }
             }
         }).eval();

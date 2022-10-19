@@ -32,7 +32,9 @@ pub fn create_repl(comms: Repl) -> () {
                     match key {
                         Key::Char('\n') => {
                             current_line += "\r\n";
-                            comms.sender.send(Message::new(&"YOU".to_string(), &current_line)).eval();
+                            comms.sender.send(Message::new(&"YOU".to_string(), &current_line)).eval_or_else(|e| {
+                                warn!("Stream send error: {e}");
+                            });
                             write!(stdout, "{}\r{}", clear::CurrentLine, Message::new(&"YOU".to_string(), &current_line)).eval();
                             write!(stdout, "{}\r> ", clear::CurrentLine).eval();
                             stdout.flush().eval();
@@ -76,7 +78,9 @@ pub fn create_repl(comms: Repl) -> () {
                 }
 
                 fn shutdown(comms: Repl) {
-                    comms.event_o.send(true).eval();
+                    comms.event_o.send(true).eval_or_else(|e| {
+                        warn!("Stream send error: {e}");
+                    });
                     println!("Restoring terminal, please hold..\r");
                 }
             }

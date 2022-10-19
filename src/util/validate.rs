@@ -47,25 +47,9 @@ fn make_valid_domain(domain: String) -> Result<String, String> {
         }
     }
 
-    // DOMAIN length
-    if test_domain.is_empty() || test_domain.len() > 63 {
-        return Err(format!(
-            "{:?} is not the correct length of a valid domain",
-            test_domain
-        ));
-    }
-
     // No leading || trailing hyphen
     if test_domain.starts_with('-') || test_domain.ends_with('-') {
         return Err("Domains cannot start nor end with \"-\"".to_string());
-    }
-
-    // Split '.' length >= 2
-    if test_domain.split('.').count() <= 1 {
-        return Err(format!(
-            "{:?} has an invalid number of segments when split by \".\"",
-            test_domain
-        ));
     }
 
     // Last TLD length >= 2
@@ -109,15 +93,6 @@ mod tests {
             "invalid url"
         );
 
-        // Too long
-        let test_url: String =
-            "this-example-domain-is-way-way-way-too-long-to-be-a-valid-url-in-real-life.com"
-                .to_string();
-        assert_eq!(
-            make_valid_domain(test_url).eval_or("invalid url".to_string()),
-            "invalid url"
-        );
-
         // post || prefixed url
         let test_url: String = "example.this-".to_string();
         assert_eq!(
@@ -131,13 +106,11 @@ mod tests {
             make_valid_domain(test_url).eval_or("invalid url".to_string()),
             "invalid url"
         );
-
-        // Invalid number of segments
-        let test_url: String = "onlyonesegment".to_string();
+        let test_url: String = "example.c".to_string(); // .c is too short to be valid
         assert_eq!(
             make_valid_domain(test_url).eval_or("invalid url".to_string()),
             "invalid url"
-        );
+        )
     }
 
     #[test]

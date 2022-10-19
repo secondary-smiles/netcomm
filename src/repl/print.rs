@@ -1,7 +1,7 @@
 use std::thread;
 use info_utils::prelude::*;
 use termion::{raw::{IntoRawMode}, input::TermRead, event::Key, clear};
-use std::io::{Write, stdout};
+use std::io::{Write, stdout, stderr};
 
 
 use crate::util::{
@@ -15,9 +15,12 @@ pub fn create_repl(comms: Repl) {
         .spawn(move || {
             let mut stdin = termion::async_stdin().keys();
             let mut stdout = stdout().into_raw_mode().eval();
+            let mut stderr = stderr().into_raw_mode().eval();
 
             let mut current_line = String::new();
 
+            write!(stderr, "> ").eval();
+            stderr.flush().eval();
             loop {
                 let status = comms.event_i.try_recv().eval_or_default();
                 if status {
@@ -34,8 +37,9 @@ pub fn create_repl(comms: Repl) {
                                 warn!("Stream send error: {e}");
                             });
                             write!(stdout, "{}\r{}", clear::CurrentLine, Message::new(&"YOU".to_string(), &current_line)).eval();
-                            write!(stdout, "{}\r> ", clear::CurrentLine).eval();
+                            write!(stderr, "{}\r> ", clear::CurrentLine).eval();
                             stdout.flush().eval();
+                            stderr.flush().eval();
                             current_line = String::new();
                         }
                         Key::Char(c) => {
@@ -48,10 +52,10 @@ pub fn create_repl(comms: Repl) {
                             let mut chars = current_line.chars();
                             chars.next_back();
                             let audited_line = chars.as_str();
-
-                            let audited_display = format!("> {}", audited_line);
-                            write!(stdout, "\r{}{}", clear::CurrentLine, audited_display).eval();
+                            write!(stderr, "{}\r> ", clear::CurrentLine).eval();
+                            write!(stdout, "{}", audited_line).eval();
                             stdout.flush().eval();
+                            stderr.flush().eval();
 
                             current_line = audited_line.to_string();
                         }
@@ -70,13 +74,15 @@ pub fn create_repl(comms: Repl) {
                         message.content = message.content.trim().to_string();
                         write!(stdout, "{}\r\n", message).eval();
                     }
+                    write!(stderr, "> ").eval();
+                    stderr.flush().eval();
                 }
 
                 fn shutdown(comms: Repl) {
                     comms.event_o.send(true).eval_or_else(|e| {
                         warn!("Network closed: {e}");
                     });
-                    eprint!("Restoring terminal, please hold..\r\n");
+                    eprint!("\r\n\x1b[1mRestoring terminal, please hold..\x1b[0m\r\n");
                 }
             }
         }).eval();

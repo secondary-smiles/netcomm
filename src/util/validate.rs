@@ -11,34 +11,9 @@ impl Args {
         - If DOMAIN; DOMAIN is valid URL or IP
         - Cannot set -v && -q
         */
-        if self.port == None && self.domain ==  None {
-            return Err("<PORT> must be specified".to_string());
-        } else if self.port == None && self.domain.clone().eval_or("foo".to_string()).parse::<u16>().is_ok() {
-            self.port = Some(self.domain.clone().eval().parse::<u16>().should("<DOMAIN> should be stable"));
-            self.domain = None;
-        }
-
-        if !self.listen && self.domain == None {
-            return Err("<DOMAIN> or --listen required".to_string());
-        }
-        if self.listen && self.domain != None {
-            return Err(
-                "<DOMAIN> cannot be specified with listener server".to_string(),
-            );
-        }
-
-        if self.domain != None {
-            self.domain = match make_valid_domain(self.domain.clone().eval()) {
-                Ok(d) => Some(d),
-                Err(e) => {
-                    return Err(format!(
-                        "{:?} is not a valid domain or IP for reason: \"{}\"",
-                        self.domain.clone().eval(),
-                        e
-                    ));
-                }
-            }
-        }
+        self.domain = make_valid_domain(self.domain.clone()).eval_or_else(|e| {
+            terror!("Parse error: {e}");
+        });
 
         Ok(())
     }

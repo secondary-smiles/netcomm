@@ -12,14 +12,15 @@ use util::{
     message::Message,
     connection::Connection,
 };
+use crate::net::listener::create_listener;
 
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about, long_about = None)]
 /// Communicate with servers interactively
 pub struct Args {
-    domain: Option<String>,
+    domain: String,
 
-    port: Option<u16>,
+    port: u16,
 
     /// Run in listen mode
     #[arg(short, long)]
@@ -61,7 +62,7 @@ fn main() {
         thread::Builder::new()
             .name("Net".to_string())
             .spawn(move || {
-                net_comms.event_o.send(true).eval();
+                create_listener(connection, net_comms);
             }).eval();
     } else {
         thread::Builder::new()

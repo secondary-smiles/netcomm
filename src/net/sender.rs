@@ -12,8 +12,8 @@ use crate::util::{
 pub fn create_sender_connection(connection: Connection, comms: Net) {
     let stream = TcpStream::connect(
         format!("{}:{}",
-                connection.domain.should("Should be validated"),
-                connection.port.should("Should be validated")
+                connection.domain,
+                connection.port,
         )).eval_or_else(|e| {
         comms.event_o.send(true).should("Channel error");
         terror!("{e}");

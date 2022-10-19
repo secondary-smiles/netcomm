@@ -25,8 +25,6 @@ pub fn create_sender_connection(connection: Connection, comms: Net) -> () {
     let mut l_stream = stream;
     let mut s_stream = l_stream.try_clone().should("System error");
 
-    let (sig, recvr) = mpsc::channel();
-
     let listen_thread = thread::Builder::new()
         .name("Net Listener".to_string())
         .spawn(move || {
@@ -43,7 +41,6 @@ pub fn create_sender_connection(connection: Connection, comms: Net) -> () {
                 if bytes_read == 0 {
                     if l_stream.peek(&mut buffer).eval_or_default() == 0 {
                         warn!("stream closed");
-                        sig.send(true).should("Channel error");
                         comms.event_o.send(true).should("Channel error");
                         break;
                     }
@@ -70,12 +67,9 @@ pub fn create_sender_connection(connection: Connection, comms: Net) -> () {
                     s_stream.write(message.content.as_bytes()).eval_or_default();
                     s_stream.flush().should("Stream should flush successfully");
                 }
-                let status = recvr.try_recv().eval_or_default();
-                if status { break; }
             }
         }).eval();
 
     listen_thread.join().should("Thread shouldn't panic");
-    send_thread.join().should("Thread shouldn't panic");
     return;
 }

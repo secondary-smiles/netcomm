@@ -1,11 +1,6 @@
 use std::thread;
 use info_utils::prelude::*;
-use termion::{
-    screen,
-    raw::{IntoRawMode},
-    input::TermRead,
-    event::Key,
-};
+use termion::{screen, raw::{IntoRawMode}, input::TermRead, event::Key, cursor, clear};
 use std::io::{Write, stdout, stdin};
 
 
@@ -15,6 +10,7 @@ use crate::util::{
 };
 
 pub fn create_repl(comms: Repl) -> () {
+    let mut comms: Repl = comms;
     let handle_thread = thread::Builder::new()
         .name("UI Listener".to_string())
         .spawn(move || {
@@ -47,9 +43,19 @@ pub fn create_repl(comms: Repl) -> () {
 
                             current_line.push(c as char);
                         }
+                        Key::Backspace => {
+                            let mut chars = current_line.chars();
+                            chars.next_back();
+                            let audited_line = chars.as_str();
+
+                            let audited_display = format!("> {}", audited_line);
+                            write!(stdout, "\r{}{}", clear::CurrentLine, audited_display).eval();
+                            stdout.flush().eval();
+
+                            current_line = audited_line.to_string();
+                        }
                         Key::Ctrl('c') => {
-                            shutdown(comms);
-                            break;
+                            comms = shutdown(comms);
                         }
                         _ => {}
                     }
@@ -63,9 +69,10 @@ pub fn create_repl(comms: Repl) -> () {
                     }
                 }
 
-                fn shutdown(comms: Repl) {
+                fn shutdown(comms: Repl) -> Repl {
                     comms.event_o.send(true).eval();
                     println!("Restoring terminal, please hold..\r");
+                    comms
                 }
             }
         }).eval();

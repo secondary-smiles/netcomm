@@ -18,8 +18,9 @@ pub fn create_repl(comms: Repl) {
             let mut stderr = stderr().into_raw_mode().eval();
 
             let mut current_line = String::new();
+            const P: &str = "\x1b[1m> \x1b[0m";
 
-            write!(stderr, "> ").eval();
+            write!(stderr, "{P}").eval();
             loop {
                 let status = comms.event_i.try_recv().eval_or_default();
                 if status {
@@ -34,7 +35,7 @@ pub fn create_repl(comms: Repl) {
                             current_line += "\r\n";
                             comms.sender.send(Message::new(&"YOU".to_string(), &current_line)).eval_or_default();
                             write!(stdout, "{}\r{}", clear::CurrentLine, Message::new(&"YOU".to_string(), &current_line)).eval();
-                            write!(stderr, "{}\r> ", clear::CurrentLine).eval();
+                            write!(stderr, "{}\r{P}", clear::CurrentLine).eval();
                             current_line = String::new();
                         }
                         Key::Char(c) => {
@@ -46,7 +47,7 @@ pub fn create_repl(comms: Repl) {
                             let mut chars = current_line.chars();
                             chars.next_back();
                             let audited_line = chars.as_str();
-                            write!(stderr, "{}\r> ", clear::CurrentLine).eval();
+                            write!(stderr, "{}\r{P}", clear::CurrentLine).eval();
                             write!(stdout, "{}", audited_line).eval();
 
                             current_line = audited_line.to_string();
@@ -66,7 +67,7 @@ pub fn create_repl(comms: Repl) {
                         message.content = message.content.trim().to_string();
                         write!(stdout, "{}\r\n", message).eval();
                     }
-                    write!(stderr, "> ").eval();
+                    write!(stderr, "{P}").eval();
                 }
 
                 fn shutdown(comms: Repl) {

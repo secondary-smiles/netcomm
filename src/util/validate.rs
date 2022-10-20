@@ -1,16 +1,8 @@
 use crate::Args;
 use info_utils::prelude::*;
-use std::net::IpAddr;
 
 impl Args {
     pub fn validate(&mut self) -> Result<(), String> {
-        /* Checks:
-        - PORT
-        - If not --listen; PORT && DOMAIN
-        - If --listen; PORT !DOMAIN
-        - If DOMAIN; DOMAIN is valid URL or IP
-        - Cannot set -v && -q
-        */
         self.domain = make_valid_domain(self.domain.clone()).eval_or_else(|e| {
             terror!("Parse error: {e}");
         });

@@ -19,10 +19,9 @@ pub fn create_listener(connection: Connection, comms: Net) {
         terror!("{e}");
     });
 
-    for stream in listener.incoming() {
+    if let Some(stream) = listener.incoming().next() {
         let stream = stream.eval();
         handle_stream(stream, comms);
-        break;
     }
 }
 

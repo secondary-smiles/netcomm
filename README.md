@@ -42,4 +42,4 @@ Options:
 
 ## Demonstration
 
-![Usage demonstration](/Users/phantomphreak/Documents/Projects/Code/rust/netcomm/social/showcase.gif)
+![Usage demonstration](social/showcase.gif)

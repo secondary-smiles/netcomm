@@ -33,23 +33,23 @@ fn main() {
         error!("Invalid program arguments: {}", e);
     });
 
-    let (n_sender, n_reciever) = mpsc::channel::<Message>();
-    let (r_sender, r_reciever) = mpsc::channel::<Message>();
-    let (ne_sender, ne_reciever) = mpsc::channel::<bool>();
-    let (re_sender, re_reciever) = mpsc::channel::<bool>();
+    let (n_sender, n_receiver) = mpsc::channel::<Message>();
+    let (r_sender, r_receiver) = mpsc::channel::<Message>();
+    let (ne_sender, ne_receiver) = mpsc::channel::<bool>();
+    let (re_sender, re_receiver) = mpsc::channel::<bool>();
 
     let net_comms = Net {
         sender: n_sender,
-        recvr: r_reciever,
+        recvr: r_receiver,
         event_o: re_sender,
-        event_i: ne_reciever,
+        event_i: ne_receiver,
     };
 
     let repl_comms = Repl {
         sender: r_sender,
-        recvr: n_reciever,
+        recvr: n_receiver,
         event_o: ne_sender,
-        event_i: re_reciever,
+        event_i: re_receiver,
     };
 
     let connection = Connection {

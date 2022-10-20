@@ -20,7 +20,6 @@ pub fn create_repl(comms: Repl) {
             let mut current_line = String::new();
 
             write!(stderr, "> ").eval();
-            stderr.flush().eval();
             loop {
                 let status = comms.event_i.try_recv().eval_or_default();
                 if status {
@@ -33,18 +32,13 @@ pub fn create_repl(comms: Repl) {
                     match key {
                         Key::Char('\n') => {
                             current_line += "\r\n";
-                            comms.sender.send(Message::new(&"YOU".to_string(), &current_line)).eval_or_else(|e| {
-                                warn!("Stream send error: {e}");
-                            });
+                            comms.sender.send(Message::new(&"YOU".to_string(), &current_line)).eval_or_default();
                             write!(stdout, "{}\r{}", clear::CurrentLine, Message::new(&"YOU".to_string(), &current_line)).eval();
                             write!(stderr, "{}\r> ", clear::CurrentLine).eval();
-                            stdout.flush().eval();
-                            stderr.flush().eval();
                             current_line = String::new();
                         }
                         Key::Char(c) => {
                             write!(stdout, "{}", c as char).eval();
-                            stdout.flush().eval();
 
                             current_line.push(c as char);
                         }
@@ -54,8 +48,6 @@ pub fn create_repl(comms: Repl) {
                             let audited_line = chars.as_str();
                             write!(stderr, "{}\r> ", clear::CurrentLine).eval();
                             write!(stdout, "{}", audited_line).eval();
-                            stdout.flush().eval();
-                            stderr.flush().eval();
 
                             current_line = audited_line.to_string();
                         }
@@ -75,15 +67,14 @@ pub fn create_repl(comms: Repl) {
                         write!(stdout, "{}\r\n", message).eval();
                     }
                     write!(stderr, "> ").eval();
-                    stderr.flush().eval();
                 }
 
                 fn shutdown(comms: Repl) {
-                    comms.event_o.send(true).eval_or_else(|e| {
-                        warn!("Network closed: {e}");
-                    });
+                    comms.event_o.send(true).eval_or_default();
                     eprint!("\r\n\x1b[1mRestoring terminal, please hold..\x1b[0m\r\n");
                 }
+                stdout.flush().eval();
+                stderr.flush().eval();
             }
         }).eval();
     handle_thread.join().eval();
